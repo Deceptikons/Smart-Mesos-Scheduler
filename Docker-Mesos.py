@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import logging
 import mesos.interface
 from mesos.interface import mesos_pb2
@@ -71,7 +72,7 @@ class MyMesosScheduler(mesos.interface.Scheduler):
 
 	# Define the command line to execute in the Docker container
 	command = mesos_pb2.CommandInfo()
-	command.value = "sleep 30"
+	command.value = "ifconfig;echo 'hello world'"
 	task.command.MergeFrom(command) # The MergeFrom allows to create an object then to use this object in an other one. Here we use the new CommandInfo object and specify to use this instance for the parameter task.command.
 
 	task.task_id.value = id
@@ -95,6 +96,11 @@ class MyMesosScheduler(mesos.interface.Scheduler):
 	docker.image = "centos"
 	docker.network = 2 # mesos_pb2.ContainerInfo.DockerInfo.Network.BRIDGE
 	docker.force_pull_image = True
+
+	#create parameter object to pass the weave information
+	param = docker.parameters.add()
+	param.key = "net"
+	param.value = "weave"
 
 	# We could (optinally of course) use some ports too available in offer
 	## First we need to tell mesos we take some ports from the offer, like any other resource
@@ -140,7 +146,7 @@ if __name__ == "__main__":
     driver = mesos.native.MesosSchedulerDriver(
          mesosScheduler,
          framework,
-         '127.0.0.1:5050') # I suppose here that mesos master url is local
+         '10.10.1.71:5050') # I suppose here that mesos master url is local
 
     driver.run()
 
