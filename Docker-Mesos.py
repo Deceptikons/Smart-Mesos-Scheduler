@@ -4,13 +4,14 @@ import mesos.interface
 from mesos.interface import mesos_pb2
 import mesos.native
 from appConfig import AppConfig
-
+from taskStatus import TaskStatus
 
 class MyMesosScheduler(mesos.interface.Scheduler):
 
   def __init__(self, implicitAcknowledgements, executor):
     self.implicitAcknowledgements = implicitAcknowledgements
     self.executor = executor
+    self.status = TaskStatus()
     #configure logging
     self.logger = logging.getLogger('mesos_framework')
     formatter = logging.Formatter('[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s','%m-%d %H:%M:%S')
@@ -42,6 +43,9 @@ class MyMesosScheduler(mesos.interface.Scheduler):
       offer_tasks.append(task)
       #id1 += 1
       driver.launchTasks(offer.id, offer_tasks)
+      #we now add the tasks in taskStatus object
+      self.status.addApp(appconfig.getName())
+      self.status.addTask(offer.id.value, appconfig.getName())
       break
       self.logger.info("Finished ")	
       
@@ -59,6 +63,10 @@ class MyMesosScheduler(mesos.interface.Scheduler):
     '''
     self.logger.info("Task %s is in state %s" % \
     (update.task_id.value, mesos_pb2.TaskState.Name(update.state)))
+    # we update the status of the app
+    self.status.updateStatus(update.task_id.value, mesos_pb2.TaskState.Name(update.state))
+    # we log the status for a sanity check
+    self.logger.info("Statuses - %s", self.status.getDict())
 
   def frameworkMessage(self, driver, executorId, slaveId, message):
     self.logger.info("Received framework message")
@@ -121,20 +129,6 @@ class MyMesosScheduler(mesos.interface.Scheduler):
     param = docker.parameters.add()
     param.key = "net"
     param.value = "weave"
-
-    # We could (optinally of course) use some ports too available in offer
-    ## First we need to tell mesos we take some ports from the offer, like any other resource
-    #mesos_ports = task.resources.add()
-    #mesos_ports.name = "ports"
-    #mesos_ports.type = mesos_pb2.Value.RANGES
-    #port_range = mesos_ports.ranges.range.add()
-    #available_port = get_some_available_port_in_port_offer_resources()
-    #port_range.begin = available_port
-    #port_range.end = available_port
-    ## We also need to tell docker to do mapping with this port
-    #docker_port = docker.port_mappings.add()
-    #docker_port.host_port = available_port
-    #docker_port.container_port = available_port
 
     # Set docker info in container.docker
     container.docker.MergeFrom(docker)
