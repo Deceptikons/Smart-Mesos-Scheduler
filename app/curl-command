@@ -1,1 +1,1 @@
-curl -H "Content-Type: application/json" -X POST --data '{"name":"test-app","cpu":"2","ram":"512", "command":"ifconfig;sleep 10","docker_image":"centos","storage":"False"}' http://127.0.0.1:5000/submit
+curl -H "Content-Type: application/json" -X POST --data '{"name":"test-app","cpu":"2","ram":"8196", "command":"cd cassandra;./script.sh;./startcassandra.sh;while sleep 5; do ps aux | grep java; done","docker_image":"yasaswikishore/cassandra:initialcommit","storage":"False"}' http://127.0.0.1:5000/submit
