@@ -1,6 +1,7 @@
 #!/usr/bin/python
 from flask import Flask , request , jsonify
 import json
+import requests
 import scheduler
 from scheduler import MyMesosScheduler
 import logging
@@ -12,6 +13,8 @@ import mesos.native
 from appConfig import AppConfig
 from taskStatus import TaskStatus
 import threading
+import subprocess
+from subprocess import Popen, PIPE
 app = Flask(__name__)
 
 
@@ -90,6 +93,29 @@ def getStatus():
   print mesosScheduler.getTaskList()
   print jsonify(mesosScheduler.getTaskList())
   return json.dumps(mesosScheduler.getTaskList())
+
+#Endpoint to get Application stdout log
+@app.route('/appData')
+def getData():
+  appID = request.args.get('appID')
+  p = Popen(['./go-mesoslog','-m', '10.10.1.71', 'print' , appID], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+  output, err = p.communicate(b"input data that is passed to subprocess' stdin")
+  rc = p.returncode
+  return output
+
+
+
+#Endpoint to support DNS query
+@app.route('/dnsQuery')
+def getIPAddress():
+  query = request.args.get('appID')
+  request_string = "http://10.10.1.71:8123/v1/hosts/" + query + ".MyMesosDockerExample.mesos"
+  response = requests.get(request_string)
+  array = json.loads(response.text)
+  ip_address = array[0]["ip"]
+
+  print ip_address
+  return ip_address
 
 
 # Endpoint to get the state decisions (up or down)
