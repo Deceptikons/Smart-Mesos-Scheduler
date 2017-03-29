@@ -28,6 +28,9 @@ class MyMesosScheduler(mesos.interface.Scheduler):
   def addApp(self,appconfig):
     self.app_list.append(appconfig)
 
+  def getTaskList(self):
+    return self.status.getDict()
+
   def resourceOffers(self, driver, offers):
     '''
     Basic placement strategy (loop over offers and try to push as possible)

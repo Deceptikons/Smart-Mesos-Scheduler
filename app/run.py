@@ -1,5 +1,5 @@
-#!./flask/bin/python
-from flask import Flask , request
+#!/usr/bin/python
+from flask import Flask , request , jsonify
 import json
 import scheduler
 from scheduler import MyMesosScheduler
@@ -13,6 +13,49 @@ from appConfig import AppConfig
 from taskStatus import TaskStatus
 import threading
 app = Flask(__name__)
+
+
+@app.before_request
+def option_autoreply():
+    """ Always reply 200 on OPTIONS request """
+
+    if request.method == 'OPTIONS':
+        resp = app.make_default_options_response()
+
+        headers = None
+        if 'ACCESS_CONTROL_REQUEST_HEADERS' in request.headers:
+            headers = request.headers['ACCESS_CONTROL_REQUEST_HEADERS']
+
+        h = resp.headers
+
+        # Allow the origin which made the XHR
+        h['Access-Control-Allow-Origin'] = request.headers['Origin']
+        # Allow the actual method
+        h['Access-Control-Allow-Methods'] = request.headers['Access-Control-Request-Method']
+        # Allow for 10 seconds
+        h['Access-Control-Max-Age'] = "10"
+
+        # We also keep current headers
+        if headers is not None:
+            h['Access-Control-Allow-Headers'] = headers
+
+        return resp
+
+
+@app.after_request
+def set_allow_origin(resp):
+    """ Set origin for GET, POST, PUT, DELETE requests """
+
+    h = resp.headers
+
+    # Allow crossdomain for other HTTP Verbs
+    if request.method != 'OPTIONS' and 'Origin' in request.headers:
+        h['Access-Control-Allow-Origin'] = request.headers['Origin']
+
+
+    return resp
+
+
 
 @app.route('/')
 def api_root():
@@ -28,6 +71,26 @@ def submitJob():
   app = AppConfig(app_obj)
   mesosScheduler.addApp(app)
   return "Successfully submitted job" 
+
+
+# Endpoint to get the task status
+@app.route('/status', methods=['GET'])
+def getStatus():
+  #app_obj = request.get_json()
+  #print app_obj['state']
+  #if( app_obj['state'] == "up" ):
+  #  print "Scaling up the Resources"
+  #  scale_obj.scaleUp()
+  #else:
+  #  scale_obj.scaleDown()
+  #appdict = json.dumps(app_obj)
+  #print appdict
+  #print appdict['name']
+  #app = AppConfig(app_obj)
+  print mesosScheduler.getTaskList()
+  print jsonify(mesosScheduler.getTaskList())
+  return json.dumps(mesosScheduler.getTaskList())
+
 
 # Endpoint to get the state decisions (up or down)
 @app.route('/status', methods=['POST'])
@@ -95,4 +158,4 @@ if __name__ == '__main__':
   tdriver.deamon = True
   tdriver.start()
   #finally, we run the application
-  app.run()
+  app.run(host='10.10.1.71')

@@ -19,7 +19,7 @@ class AppConfig:
   def __init__(self, diction):
     print diction
     self.name = diction['name']
-    self.cpus = int(diction["cpu"])
+    self.cpus = float(diction["cpu"])
     self.ram  = int(diction["ram"])
     self.command = diction["command"]
     self.storage = (diction["storage"]!="False")
