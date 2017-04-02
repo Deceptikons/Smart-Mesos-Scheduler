@@ -36,6 +36,7 @@ class MyMesosScheduler(mesos.interface.Scheduler):
     for offer in offers:
       offer_tasks = []
       if (not self.app_list):
+        driver.declineOffer(offer.id)
         break
       appconfig = self.app_list.pop()
       task = self.new_docker_task(offer, offer.id.value, appconfig)
@@ -53,7 +54,6 @@ class MyMesosScheduler(mesos.interface.Scheduler):
     for offer in offers:
     self.logger.info(offer)
     # Let's decline the offer for the moment
-    driver.declineOffer(offer.id)
     '''
 
   def statusUpdate(self, driver, update):
