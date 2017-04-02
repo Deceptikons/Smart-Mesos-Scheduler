@@ -154,10 +154,10 @@ if __name__ == "__main__":
   # adding a custom application - this should be done by the REST API
   diction = {}
   diction["name"] = "test-app"
-  diction["cpu"] = 2
-  diction["ram"] = 512
-  diction["command"] = "ifconfig; sleep 10"
-  diction["docker_image"] = "centos"
+  diction["cpu"] = 1
+  diction["ram"] = 4096
+  diction["command"] = "cd cassandra ; ./script.sh ; ./startcassandra.sh ; while sleep 5;do ps aux | grep java;done"
+  diction["docker_image"] = "yasaswikishore/cassandra:initialcommit"
   diction["storage"] = False
   app = AppConfig(diction)
   mesosScheduler.addApp(app)
@@ -165,7 +165,7 @@ if __name__ == "__main__":
   driver = mesos.native.MesosSchedulerDriver(
        mesosScheduler,
            framework,
-           '10.10.1.71:5050') # I suppose here that mesos master url is local
+           'localhost:5050') # I suppose here that mesos master url is local
 
   driver.run()
 
