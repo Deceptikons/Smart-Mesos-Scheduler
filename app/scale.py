@@ -31,6 +31,8 @@ class ScaleManager:
 
   def scaleDown(self):
     task_list =self.mesosObj.getTaskList()
+    if(task_list.keys()[-1] == "cassandraseed"):
+      return
     value = task_list[task_list.keys()[-1]].keys()[0]
     print value
     #cmd = "curl http://127.0.0.1:5000/kill?taskID="+str(value)
