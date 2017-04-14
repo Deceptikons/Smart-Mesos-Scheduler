@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from flask import Flask , request , jsonify
+import time
 import json
 import requests
 import scheduler
@@ -17,7 +18,7 @@ import subprocess
 from subprocess import Popen, PIPE
 app = Flask(__name__)
 
-
+application_list={}
 @app.before_request
 def option_autoreply():
     """ Always reply 200 on OPTIONS request """
@@ -71,10 +72,62 @@ def submitJob():
   #appdict = json.dumps(app_obj)
   #print appdict
   #print appdict['name']
+  print app_obj
+  global application_list
+  application_list.update({app_obj['name'] : app_obj })
   app = AppConfig(app_obj)
   mesosScheduler.addApp(app)
   return "Successfully submitted job" 
 
+@app.route('/appDetails')
+def getApplicationDetails():
+  print application_list
+  app_list = json.dumps(application_list)
+  app_list = json.loads(app_list)
+  app_name = request.args.get('appName');
+  #print app_name
+  #print app_list
+  return json.dumps(app_list[app_name])
+
+
+@app.route('/appUtil')
+def getAppUtilization():
+  app_name = request.args.get('appName')
+  taskID = mesosScheduler.getTaskList()[app_name].keys()
+  #print taskID
+    
+  request_string = "http://127.0.0.1:5051/monitor/statistics"
+  response = requests.get(request_string)
+  data = json.loads(response.text)
+  res = {}
+  #print "DATA ",data
+  for i in range(len(data)):
+    #print "EXEC ID : ",data[i]["executor_id"]," ID : ",taskID[0]
+    if(data[i]["executor_id"]==taskID[0]):
+      #print " CPU TIME :",data[i]["statistics"]["cpus_system_time_secs"]
+      res={ "sys_time" : data[i]["statistics"]["cpus_system_time_secs"] , "user_time" : data[i]["statistics"]["cpus_user_time_secs"],"timestamp" : data[i]["statistics"]["timestamp"] , "cpu_limit" : data[i]["statistics"]["cpus_limit"]}
+      #print res
+      
+
+
+  return json.dumps(res)
+
+@app.route('/appCPUUtil')
+def getAppCpu():
+  app_name = request.args.get('appName')
+  request_string = "http://127.0.0.1:5000/appUtil?appName="+app_name
+  response = requests.get(request_string)
+  dataA = json.loads(response.text)
+  #time.sleep(100)
+  #print " DATA A :",dataA  
+  response = requests.get(request_string)
+  dataB = json.loads(response.text)
+  #print " DATA B :",dataB
+  cpu_utils = ((dataB["sys_time"] - dataA["sys_time"]) + (dataB["user_time"] - dataA["user_time"] ))/ (dataB["timestamp"] - dataA["timestamp"])
+  cpu_percent = cpu_utils / dataB["cpu_limit"]
+  #print " PERCENT : ",cpu_percent
+  cpu_percent *= 100 
+  return str(cpu_percent)
 
 # Endpoint to get the task status
 @app.route('/status', methods=['GET'])
@@ -102,6 +155,24 @@ def getData():
   output, err = p.communicate(b"input data that is passed to subprocess' stdin")
   rc = p.returncode
   return output
+
+#Endpoint to get number of slaves
+@app.route('/getSlaves')
+def getSlaves():
+  request_string = "http://127.0.0.1:5050/master/slaves"
+  response = requests.get(request_string)
+  #print response.text
+  array = json.loads(response.text)
+  #print array
+  val = array["slaves"]
+  res = {}
+  for i in val:
+    res.update({"hostname" : i["hostname"]})
+    res.update({"cpus" : i["resources"]["cpus"]})
+    res.update({"mem" : i["resources"]["mem"]})
+    res.update({"disk" : i["resources"]["disk"]})
+    
+  return json.dumps(res)
 
 
 
