@@ -96,7 +96,7 @@ def getAppUtilization():
   taskID = mesosScheduler.getTaskList()[app_name].keys()
   #print taskID
     
-  request_string = "http://127.0.0.1:5051/monitor/statistics"
+  request_string = "http://10.10.1.71:5051/monitor/statistics"
   response = requests.get(request_string)
   data = json.loads(response.text)
   res = {}
@@ -115,7 +115,7 @@ def getAppUtilization():
 @app.route('/appCPUUtil')
 def getAppCpu():
   app_name = request.args.get('appName')
-  request_string = "http://127.0.0.1:5000/appUtil?appName="+app_name
+  request_string = "http://10.10.1.71:5000/appUtil?appName="+app_name
   response = requests.get(request_string)
   dataA = json.loads(response.text)
   #time.sleep(100)
@@ -151,7 +151,7 @@ def getStatus():
 @app.route('/appData')
 def getData():
   appID = request.args.get('appID')
-  p = Popen(['./go-mesoslog','-m', '127.0.0.1', 'print' , appID], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+  p = Popen(['./go-mesoslog','-m', '10.10.1.71', 'print' , appID], stdin=PIPE, stdout=PIPE, stderr=PIPE)
   output, err = p.communicate(b"input data that is passed to subprocess' stdin")
   rc = p.returncode
   return output
@@ -159,20 +159,23 @@ def getData():
 #Endpoint to get number of slaves
 @app.route('/getSlaves')
 def getSlaves():
-  request_string = "http://127.0.0.1:5050/master/slaves"
+  request_string = "http://10.10.1.71:5050/master/slaves"
   response = requests.get(request_string)
   #print response.text
   array = json.loads(response.text)
-  #print array
+  print array
   val = array["slaves"]
+  arr = []
   res = {}
   for i in val:
     res.update({"hostname" : i["hostname"]})
     res.update({"cpus" : i["resources"]["cpus"]})
     res.update({"mem" : i["resources"]["mem"]})
     res.update({"disk" : i["resources"]["disk"]})
-    
-  return json.dumps(res)
+    print res
+    arr.append(res)
+    res={}
+  return json.dumps(arr)
 
 
 
@@ -180,7 +183,7 @@ def getSlaves():
 @app.route('/dnsQuery')
 def getIPAddress():
   query = request.args.get('appID')
-  request_string = "http://127.0.0.1:8123/v1/hosts/" + query + ".MyMesosDockerExample.mesos"
+  request_string = "http://10.10.1.71:8123/v1/hosts/" + query + ".MyMesosDockerExample.mesos"
   response = requests.get(request_string)
   array = json.loads(response.text)
   ip_address = array[0]["ip"]
@@ -264,4 +267,4 @@ if __name__ == '__main__':
   tdriver.deamon = True
   tdriver.start()
   #finally, we run the application
-  app.run(host='127.0.0.1' ,threaded=True)
+  app.run(host='10.10.1.71' ,threaded=True)
