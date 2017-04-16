@@ -19,8 +19,14 @@ class ScaleManager:
     self.mesosObj=mesosSchedulerObj
   def scaleUp(self):
     ScaleManager.id+=1
-    app_obj = {'name':'test-app'+str(ScaleManager.id),'cpu':'1','ram':'4096', 'command':'cd cassandra;./nonseed.sh;./startcassandra.sh;while sleep 5; do ps aux | grep java; done','docker_image':'yasaswikishore/cassandra:initialcommit','storage':'False'}
+    app_obj = {'name':'test-app'+str(ScaleManager.id),'cpu':'4','ram':'8192', 'command':'cd cassandra;./nonseed.sh;./startcassandra.sh;while sleep 5; do ps aux | grep java; done','docker_image':'yasaswikishore/cassandra:initial','storage':'False'}
     app = AppConfig(app_obj)
+    task_list_size = len(self.mesosObj.getTaskList())
+    print task_list_size
+    if (task_list_size>1):
+      # we don't need to submit since there is already one pending
+      return
+
     self.mesosObj.addApp(app)
     print "Submitted Non Seed Node"
     #time.sleep(60)

@@ -36,23 +36,34 @@ class MyMesosScheduler(mesos.interface.Scheduler):
     Basic placement strategy (loop over offers and try to push as possible)
     '''
     id1 = 0
+    offerCpus=0
+    offerMem=0
     self.logger.info("just got an offer")
     for offer in offers:
       offer_tasks = []
+      for resource in offer.resources:
+        if resource.name == "cpus":
+          offerCpus += resource.scalar.value
+        elif resource.name == "mem":
+          offerMem += resource.scalar.value
+      print "Received offer %s with cpus: %s and mem: %s" \
+                        % (offer.id.value, offerCpus, offerMem)
       if (not self.app_list):
         self.logger.info("declining offer since no apps to run")
         driver.declineOffer(offer.id)
-        break
+        continue
       appconfig = self.app_list.pop()
-      task = self.new_docker_task(offer, offer.id.value, appconfig)
-      self.logger.info("testing logging after initializing task")
-      offer_tasks.append(task)
-      #id1 += 1
-      driver.launchTasks(offer.id, offer_tasks)
-      #we now add the tasks in taskStatus object
-      self.status.addApp(appconfig.getName())
-      self.status.addTask(offer.id.value, appconfig.getName())
-      break
+      if (offerCpus>=appconfig.cpus and offerMem>=appconfig.ram):
+        task = self.new_docker_task(offer, offer.id.value, appconfig)
+        self.logger.info("testing logging after initializing task")
+        offer_tasks.append(task)
+        #id1 += 1
+        driver.launchTasks(offer.id, offer_tasks)
+        #we now add the tasks in taskStatus object
+        self.status.addApp(appconfig.getName())
+        self.status.addTask(offer.id.value, appconfig.getName())
+      else:
+        self.logger.info("resource offer was too low")
       self.logger.info("Finished ")	
       
     '''

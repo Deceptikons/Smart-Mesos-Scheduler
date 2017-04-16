@@ -187,7 +187,7 @@ if __name__ == '__main__':
   driver = mesos.native.MesosSchedulerDriver(
        mesosScheduler,
            framework,
-           '127.0.0.1:5050') 
+           '10.10.1.71:5050') 
   # we start the scheduler driver in a daemon thread
   tdriver = threading.Thread( target = startScheduler , args= (driver,))
   tdriver.deamon = True
