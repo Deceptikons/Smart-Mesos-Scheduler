@@ -19,7 +19,7 @@ class ScaleManager:
     self.mesosObj=mesosSchedulerObj
   def scaleUp(self):
     ScaleManager.id+=1
-    app_obj = {'name':'test-app'+str(ScaleManager.id),'cpu':'4','ram':'8192', 'command':'cd cassandra;./nonseed.sh;./startcassandra.sh;while sleep 5; do ps aux | grep java; done','docker_image':'yasaswikishore/cassandra:initial','storage':'False'}
+    app_obj = {'name':'test-app1','cpu':'4','ram':'8192', 'command':'cd cassandra;./nonseed.sh;./startcassandra.sh;while sleep 5; do ps aux | grep java; done','docker_image':'yasaswikishore/cassandra:initial','storage':'False'}
     app = AppConfig(app_obj)
     task_list_size = len(self.mesosObj.getTaskList())
     print task_list_size
@@ -45,6 +45,6 @@ class ScaleManager:
     #p = Popen(["curl","http://127.0.0.1:5000/kill?taskID="+str(value)],stdin=PIPE,stdout=PIPE,stderr=PIPE,shell=True)
     #output, err = p.communicate(b"input data that is passed to subprocess' stdin")
     #rc = p.returncode
-    req = "http://127.0.0.1:5000/kill?taskID="+str(value)
+    req = "http://10.10.1.71:5000/kill?taskID="+str(value)
     response = requests.get(req)
     print " Scaled Down"

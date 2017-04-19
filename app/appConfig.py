@@ -12,10 +12,14 @@
 ''' TODO: add prometheus queries also to the appConfig
           add support for number of instances
 '''
+app_list = {}
+def getAppList():
+  return app_list
 class AppConfig:
   ''' constructor takes a dictionary (prolly from a JSON)
       as a parameter
   '''
+  app_list={}
   def __init__(self, diction):
     print diction
     self.name = diction['name']
@@ -26,6 +30,11 @@ class AppConfig:
     self.dockerImage = diction["docker_image"]
     if (self.storage):
       self.container_path = diction["container_path"]
+    self.updateList(diction)
+  
+  def updateList(self,diction):
+    global app_list
+    app_list.update({ diction['name'] : diction})
 
   #accessor functions for each
   def getName(self):

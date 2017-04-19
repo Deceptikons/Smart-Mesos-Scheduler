@@ -12,6 +12,7 @@ import mesos.interface
 from mesos.interface import mesos_pb2
 import mesos.native
 from appConfig import AppConfig
+from appConfig import getAppList
 from taskStatus import TaskStatus
 import threading
 import subprocess
@@ -68,20 +69,22 @@ def api_root():
 @app.route('/submit', methods=['POST'])
 def submitJob():
   app_obj = request.get_json()
-  print app_obj['name']
+  #print app_obj['name']
   #appdict = json.dumps(app_obj)
   #print appdict
   #print appdict['name']
-  print app_obj
+  #print app_obj
   global application_list
   application_list.update({app_obj['name'] : app_obj })
   app = AppConfig(app_obj)
   mesosScheduler.addApp(app)
+  #print "APP LIST :",application_list
   return "Successfully submitted job" 
 
 @app.route('/appDetails')
 def getApplicationDetails():
-  print application_list
+  application_list = getAppList()
+  #print application_list
   app_list = json.dumps(application_list)
   app_list = json.loads(app_list)
   app_name = request.args.get('appName');
@@ -107,9 +110,19 @@ def getAppUtilization():
       #print " CPU TIME :",data[i]["statistics"]["cpus_system_time_secs"]
       res={ "sys_time" : data[i]["statistics"]["cpus_system_time_secs"] , "user_time" : data[i]["statistics"]["cpus_user_time_secs"],"timestamp" : data[i]["statistics"]["timestamp"] , "cpu_limit" : data[i]["statistics"]["cpus_limit"]}
       #print res
-      
+  if(res == [] ):
+    request_string = "http://10.10.1.72:5051/monitor/statistics"
+    response = requests.get(request_string)
+    data = json.loads(response.text)
+    res = {}
+    #print "DATA ",data
+    for i in range(len(data)):
+      #print "EXEC ID : ",data[i]["executor_id"]," ID : ",taskID[0]
+      if(data[i]["executor_id"]==taskID[0]):
+        #print " CPU TIME :",data[i]["statistics"]["cpus_system_time_secs"]
+        res={ "sys_time" : data[i]["statistics"]["cpus_system_time_secs"] , "user_time" : data[i]["statistics"]["cpus_user_time_secs"],"timestamp" : data[i]["statistics"]["timestamp"] , "cpu_limit" : data[i]["statistics"]["cpus_limit"]}
 
-
+    #print res
   return json.dumps(res)
 
 @app.route('/appCPUUtil')
@@ -119,10 +132,10 @@ def getAppCpu():
   response = requests.get(request_string)
   dataA = json.loads(response.text)
   #time.sleep(100)
-  #print " DATA A :",dataA  
+  print " DATA A :",dataA  
   response = requests.get(request_string)
   dataB = json.loads(response.text)
-  #print " DATA B :",dataB
+  print " DATA B :",dataB
   cpu_utils = ((dataB["sys_time"] - dataA["sys_time"]) + (dataB["user_time"] - dataA["user_time"] ))/ (dataB["timestamp"] - dataA["timestamp"])
   cpu_percent = cpu_utils / dataB["cpu_limit"]
   #print " PERCENT : ",cpu_percent
@@ -172,11 +185,14 @@ def getSlaves():
     res.update({"cpus" : i["resources"]["cpus"]})
     res.update({"mem" : i["resources"]["mem"]})
     res.update({"disk" : i["resources"]["disk"]})
+    val = i["pid"]
+    val = val.split("@")[1]
+    val = val.split(":")[0]
+    res.update({"ip" : val})
     print res
     arr.append(res)
     res={}
   return json.dumps(arr)
-
 
 
 #Endpoint to support DNS query
